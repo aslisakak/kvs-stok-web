@@ -1,0 +1,120 @@
+{% extends "stok/base.html" %}
+
+{% block title %}Firma Gönderileri{% endblock %}
+
+{% block content %}
+
+<h1 class="page-heading">FİRMA GÖNDERİLERİ</h1>
+
+<div class="panel">
+
+    <div class="toolbar">
+        <form method="get" class="search-form">
+            <input
+                type="text"
+                name="q"
+                value="{{ arama }}"
+                class="search-input"
+                placeholder="Firma, ürün, seri no veya not ara..."
+            >
+
+            <button type="submit" class="btn">
+                Ara
+            </button>
+        </form>
+
+        <a
+            href="{% url 'stok:firma_gonderi_ekle' %}"
+            class="btn"
+        >
+            Yeni Gönderi
+        </a>
+
+        <a
+            href="{% url 'stok:firma_gonderileri_excel' %}"
+            class="btn secondary"
+        >
+            Excel
+        </a>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Firma Adı</th>
+                    <th>Ürün Adı</th>
+                    <th>Seri No</th>
+                    <th>Gönderim Tarihi</th>
+                    <th>Notlar</th>
+                    <th>İşlemler</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for gonderi in gonderiler %}
+                    <tr>
+                        <td>{{ gonderi.firma_adi }}</td>
+                        <td>{{ gonderi.urun_adi }}</td>
+                        <td>{{ gonderi.seri_no|default:"-" }}</td>
+                        <td>
+                            {{ gonderi.gonderim_tarihi|date:"d.m.Y" }}
+                        </td>
+                        <td>{{ gonderi.notlar|default:"-" }}</td>
+
+                        <td>
+                            <div style="display:flex; gap:6px;">
+                                <a
+                                    href="{% url 'stok:firma_gonderi_duzenle' gonderi.id %}"
+                                    class="btn"
+                                >
+                                    Düzenle
+                                </a>
+
+                                <form
+                                    method="post"
+                                    action="{% url 'stok:firma_gonderi_geri_al' gonderi.id %}"
+                                    onsubmit="return confirm('Gönderi geri alınsın mı?');"
+                                >
+                                    {% csrf_token %}
+
+                                    <button
+                                        type="submit"
+                                        class="btn secondary"
+                                    >
+                                        Geri Al
+                                    </button>
+                                </form>
+
+                                <form
+                                    method="post"
+                                    action="{% url 'stok:firma_gonderi_sil' gonderi.id %}"
+                                    onsubmit="return confirm('Gönderi silinsin mi?');"
+                                >
+                                    {% csrf_token %}
+
+                                    <button
+                                        type="submit"
+                                        class="btn danger"
+                                    >
+                                        Sil
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+
+                {% empty %}
+                    <tr>
+                        <td colspan="6" class="empty">
+                            Henüz firma gönderisi bulunmuyor.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,89 @@
+[
+{
+  "model": "auth.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$h3NBPb6h9wVmau1rUBKSFf$Y/esTJyi+L6hZRFyG8ToQofZe2hHl4Yddr5KiMVJxoE=",
+    "last_login": "2026-07-16T07:13:19.474Z",
+    "is_superuser": true,
+    "username": "sakakasli",
+    "first_name": "",
+    "last_name": "",
+    "email": "asli@kvs.com.tr",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-07-14T13:54:45.168Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "stok.urun",
+  "pk": 2,
+  "fields": {
+    "urun_adi": "x",
+    "seri_no": "123",
+    "giris_tarihi": "2026-07-16",
+    "adet": 4,
+    "olusturulma_tarihi": "2026-07-16T08:33:46.623Z"
+  }
+},
+{
+  "model": "stok.stokhareketi",
+  "pk": 4,
+  "fields": {
+    "urun": 2,
+    "islem_turu": "giris",
+    "miktar": 1,
+    "aciklama": "Yeni ürün kaydı oluşturuldu.",
+    "tarih": "2026-07-16T08:33:46.627Z"
+  }
+},
+{
+  "model": "stok.stokhareketi",
+  "pk": 5,
+  "fields": {
+    "urun": 2,
+    "islem_turu": "firma_gonderisi",
+    "miktar": -1,
+    "aciklama": "Firma: deva. deneme",
+    "tarih": "2026-07-16T08:33:59.215Z"
+  }
+},
+{
+  "model": "stok.stokhareketi",
+  "pk": 6,
+  "fields": {
+    "urun": 2,
+    "islem_turu": "giris",
+    "miktar": 5,
+    "aciklama": "Manuel stok girişi",
+    "tarih": "2026-07-16T10:17:01.369Z"
+  }
+},
+{
+  "model": "stok.firmagonderi",
+  "pk": 1,
+  "fields": {
+    "firma_adi": "deva",
+    "stok_urunu": null,
+    "urun_adi": "",
+    "seri_no": "",
+    "gonderim_tarihi": "2026-07-16",
+    "notlar": "deneme",
+    "aktif": true
+  }
+},
+{
+  "model": "stok.firmagonderi",
+  "pk": 2,
+  "fields": {
+    "firma_adi": "deva",
+    "stok_urunu": 2,
+    "urun_adi": "x",
+    "seri_no": "123",
+    "gonderim_tarihi": "2026-07-16",
+    "notlar": "ada",
+    "aktif": true
+  }
+}
+]

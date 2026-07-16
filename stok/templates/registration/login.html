@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KVS Stok Takip - Giriş</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#ededed;font-family:Arial,sans-serif}.card{width:390px;padding:34px 40px;background:#e6e6e6;border-radius:9px;box-shadow:0 8px 25px rgba(0,0,0,.16)}h1{text-align:center;font-size:24px;line-height:1.2;margin:0 0 28px}.field{margin-bottom:15px}.field label{display:block;margin-bottom:6px}.field input{width:100%;padding:11px 12px;border:1px solid #aaa;border-radius:6px;background:#fff}.button{width:100%;padding:11px;border:0;border-radius:6px;background:#3b8ed0;color:#fff;font-size:15px;cursor:pointer}.error{margin-bottom:15px;padding:10px;background:#ffd6d6;color:#8a2020;border-radius:6px}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>KVS<br>STOK TAKİP</h1>
+{% if form.errors %}<div class="error">Kullanıcı adı veya şifre hatalı.</div>{% endif %}
+<form method="post">{% csrf_token %}
+<div class="field"><label>Kullanıcı Adı</label>{{ form.username }}</div>
+<div class="field"><label>Şifre</label>{{ form.password }}</div>
+{% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+<button class="button" type="submit">Giriş Yap</button>
+</form>
+</div>
+</body>
+</html>

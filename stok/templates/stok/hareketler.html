@@ -1,0 +1,25 @@
+{% extends "stok/base.html" %}
+{% block title %}Hareket Geçmişi - KVS Stok Takip{% endblock %}
+{% block content %}
+<h1 class="page-heading">HAREKET GEÇMİŞİ - {{ urun.urun_adi }} / {{ urun.seri_no }}</h1>
+<div class="panel">
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>İşlem Türü</th><th>Miktar</th><th>Tarih</th><th>Açıklama</th></tr></thead>
+            <tbody>
+                {% for hareket in hareketler %}
+                    <tr>
+                        <td>{{ hareket.get_islem_turu_display }}</td>
+                        <td>{{ hareket.miktar }}</td>
+                        <td>{{ hareket.tarih|date:"d.m.Y H:i" }}</td>
+                        <td>{{ hareket.aciklama }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4" class="empty">Hareket kaydı bulunamadı.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="dialog-actions"><a class="btn secondary" href="{% url 'stok:urun_listesi' %}">Geri Dön</a></div>
+</div>
+{% endblock %}

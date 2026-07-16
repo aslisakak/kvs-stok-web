@@ -1,0 +1,76 @@
+{% extends "stok/base.html" %}
+
+{% block title %}Demo Cihazlar{% endblock %}
+
+{% block content %}
+
+<h1 class="page-heading">DEMO CİHAZLAR</h1>
+
+<div class="panel">
+
+    <div class="toolbar">
+        <form method="get" class="search-form">
+            <input
+                type="text"
+                name="q"
+                value="{{ arama }}"
+                class="search-input"
+                placeholder="Ürün veya seri numarası ara..."
+            >
+
+            <button type="submit" class="btn">
+                Ara
+            </button>
+        </form>
+
+        <a
+            href="{% url 'stok:demo_ekle' %}"
+            class="btn"
+        >
+            Yeni Demo
+        </a>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Ürün Adı</th>
+                    <th>Seri No</th>
+                    <th>İşlemler</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for demo in demo_listesi %}
+                    <tr>
+                        <td>{{ demo.urun_adi }}</td>
+                        <td>{{ demo.seri_no }}</td>
+                        <td>
+                            <form
+                                method="post"
+                                action="{% url 'stok:demo_sil' demo.id %}"
+                                onsubmit="return confirm('Bu demo cihaz silinsin mi?');"
+                            >
+                                {% csrf_token %}
+                                <button type="submit" class="btn danger">
+                                    Sil
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+
+                {% empty %}
+                    <tr>
+                        <td colspan="3" class="empty">
+                            Henüz demo cihaz bulunmuyor.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "stok/base.html" %}
+{% block title %}{{ sayfa_basligi }} - KVS Stok Takip{% endblock %}
+{% block content %}
+<div class="dialog-card">
+    <h1 class="dialog-title">{{ sayfa_basligi }}</h1>
+    <div class="product-summary">
+        <div><strong>Ürün:</strong> {{ urun.urun_adi }}</div>
+        <div><strong>Seri No:</strong> {{ urun.seri_no }}</div>
+        <div><strong>Mevcut Stok:</strong> {{ urun.adet }}</div>
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        {% for alan in form %}
+            <div class="field">
+                <label for="{{ alan.id_for_label }}">{{ alan.label }}</label>
+                {{ alan }}
+                {{ alan.errors }}
+            </div>
+        {% endfor %}
+        <div class="dialog-actions">
+            <button class="btn" type="submit">{{ buton_metni }}</button>
+            <a class="btn secondary" href="{% url 'stok:urun_listesi' %}">İptal</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

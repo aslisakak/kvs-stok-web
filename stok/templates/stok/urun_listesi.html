@@ -1,0 +1,91 @@
+{% extends "stok/base.html" %}
+{% block title %}Stoklar - KVS Stok Takip{% endblock %}
+{% block content %}
+<h1 class="page-heading">📦 STOKLAR</h1>
+<div class="panel">
+    <div class="toolbar">
+        <form method="get" class="search-form">
+            <input class="search-input" type="text" name="q" value="{{ arama }}" placeholder="🔍 Ürün veya seri numarası ara...">
+            <button class="btn" type="submit">Ara</button>
+        </form>
+        <a class="btn" href="{% url 'stok:urun_ekle' %}">➕ Yeni Ürün</a>
+        <a id="editBtn" class="btn disabled" href="#">Düzenle</a>
+        <a id="inBtn" class="btn disabled" href="#">📥 Stok Girişi</a>
+        <a id="outBtn" class="btn disabled" href="#">📤 Stok Çıkışı</a>
+        <a id="historyBtn" class="btn disabled" href="#">Hareketler</a>
+        <a class="btn secondary" href="{% url 'stok:excel_aktar' %}">Excel</a>
+        <a class="btn secondary" href="{% url 'stok:excel_ice_aktar' %}">Excel’den Aktar</a>
+        <button id="deleteBtn" class="btn danger" type="button" disabled>Sil</button>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Ürün Adı</th>
+                    <th>Seri No</th>
+                    <th>Giriş Tarihi</th>
+                    <th>Adet</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for urun in urunler %}
+                    <tr class="selectable-row {% if urun.adet == 0 %}stokta-yok{% endif %}" data-id="{{ urun.id }}">
+                        <td>{{ urun.urun_adi }}</td>
+                        <td>{{ urun.seri_no }}</td>
+                        <td>{{ urun.giris_tarihi|date:"d.m.Y" }}</td>
+                        <td>{{ urun.adet }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4" class="empty">Kayıt bulunamadı.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<form id="deleteForm" method="post" style="display:none;">{% csrf_token %}</form>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+    let selectedId = null;
+    const rows = document.querySelectorAll('.selectable-row');
+    const editBtn = document.getElementById('editBtn');
+    const inBtn = document.getElementById('inBtn');
+    const outBtn = document.getElementById('outBtn');
+    const historyBtn = document.getElementById('historyBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const deleteForm = document.getElementById('deleteForm');
+
+    function setLink(button, url) {
+        button.href = url;
+        button.classList.remove('disabled');
+    }
+
+    rows.forEach(row => {
+        row.addEventListener('click', () => {
+            rows.forEach(item => item.classList.remove('selected'));
+            row.classList.add('selected');
+            selectedId = row.dataset.id;
+            setLink(editBtn, `/urun/${selectedId}/duzenle/`);
+            setLink(inBtn, `/urun/${selectedId}/stok-girisi/`);
+            setLink(outBtn, `/urun/${selectedId}/stok-cikisi/`);
+            setLink(historyBtn, `/urun/${selectedId}/hareketler/`);
+            deleteBtn.disabled = false;
+        });
+
+        row.addEventListener('dblclick', () => {
+            window.location.href = `/urun/${row.dataset.id}/duzenle/`;
+        });
+    });
+
+    deleteBtn.addEventListener('click', () => {
+        if (!selectedId) return;
+        if (confirm('Seçili ürün silinsin mi?')) {
+            deleteForm.action = `/urun/${selectedId}/sil/`;
+            deleteForm.submit();
+        }
+    });
+})();
+</script>
+{% endblock %}

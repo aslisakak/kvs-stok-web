@@ -1,0 +1,25 @@
+{% extends "stok/base.html" %}
+{% block title %}Excel’den Aktar - KVS Stok Takip{% endblock %}
+{% block content %}
+<h1 class="page-heading">EXCEL’DEN İÇE AKTAR</h1>
+<div class="dialog-card" style="width:min(560px, 100%);">
+    <p style="line-height:1.55; margin-top:0;">
+        KVS aktarım Excel dosyasını seçin. Dosyadaki <strong>Stoklar</strong>,
+        <strong>Firma Gönderileri</strong>, <strong>Demo Cihazlar</strong> ve
+        <strong>Sterisense</strong> sayfaları aktarılır. Aynı kayıtlar yeniden eklenmez.
+    </p>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="field">
+            <label for="{{ form.excel_dosyasi.id_for_label }}">{{ form.excel_dosyasi.label }}</label>
+            {{ form.excel_dosyasi }}
+            {% if form.excel_dosyasi.help_text %}<div style="font-size:12px;color:#666;margin-top:5px;">{{ form.excel_dosyasi.help_text }}</div>{% endif %}
+            {{ form.excel_dosyasi.errors }}
+        </div>
+        <div class="dialog-actions">
+            <button type="submit" class="btn">İçe Aktar</button>
+            <a href="{% url 'stok:urun_listesi' %}" class="btn secondary">İptal</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends "stok/base.html" %}
+
+{% block title %}SteriSense{% endblock %}
+
+{% block content %}
+
+<h1 class="page-heading">STERISENSE</h1>
+
+<div class="panel">
+
+    <div class="toolbar">
+        <form method="get" class="search-form">
+            <input
+                type="text"
+                name="q"
+                value="{{ arama }}"
+                class="search-input"
+                placeholder="Bayi, firma, ürün veya seri no ara..."
+            >
+
+            <button type="submit" class="btn">
+                Ara
+            </button>
+        </form>
+
+        <a
+            href="{% url 'stok:sterisense_ekle' %}"
+            class="btn"
+        >
+            Yeni Kayıt
+        </a>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Bayi</th>
+                    <th>Firma</th>
+                    <th>Ürün</th>
+                    <th>Seri No</th>
+                    <th>Tarih</th>
+                    <th>Notlar</th>
+                    <th>İşlemler</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for kayit in kayitlar %}
+                    <tr>
+                        <td>{{ kayit.bayi }}</td>
+                        <td>{{ kayit.firma }}</td>
+                        <td>{{ kayit.urun_adi }}</td>
+                        <td>{{ kayit.seri_no }}</td>
+                        <td>{{ kayit.tarih|date:"d.m.Y" }}</td>
+                        <td>{{ kayit.notlar|default:"-" }}</td>
+
+                        <td>
+                            <div style="display:flex; gap:6px;">
+                                <a
+                                    href="{% url 'stok:sterisense_duzenle' kayit.id %}"
+                                    class="btn"
+                                >
+                                    Düzenle
+                                </a>
+
+                                <form
+                                    method="post"
+                                    action="{% url 'stok:sterisense_sil' kayit.id %}"
+                                    onsubmit="return confirm('Bu kayıt silinsin mi?');"
+                                >
+                                    {% csrf_token %}
+
+                                    <button
+                                        type="submit"
+                                        class="btn danger"
+                                    >
+                                        Sil
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+
+                {% empty %}
+                    <tr>
+                        <td colspan="7" class="empty">
+                            Henüz SteriSense kaydı bulunmuyor.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "stok/base.html" %}
+
+{% block title %}{{ sayfa_basligi }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .field select,
+    .field textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #b9b9b9;
+        border-radius: 6px;
+        background: white;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 14px;
+    }
+
+    .help-text {
+        margin: 5px 0 0;
+        color: #666;
+        font-size: 12px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="dialog-card">
+
+    <h1 class="dialog-title">
+        {{ sayfa_basligi }}
+    </h1>
+
+    <form method="post">
+        {% csrf_token %}
+
+        {% for alan in form %}
+            <div class="field">
+                <label for="{{ alan.id_for_label }}">
+                    {{ alan.label }}
+                </label>
+
+                {{ alan }}
+
+                {% if alan.name == "stok_urunu" %}
+                    <div class="help-text">
+                        Stoktan seçmek istemiyorsanız boş bırakıp
+                        ürün adı ve seri numarasını manuel girin.
+                    </div>
+                {% endif %}
+
+                {% if alan.errors %}
+                    {{ alan.errors }}
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <div class="dialog-actions">
+            <button type="submit" class="btn">
+                Kaydet
+            </button>
+
+            <a
+                href="{% url 'stok:firma_gonderileri' %}"
+                class="btn secondary"
+            >
+                İptal
+            </a>
+        </div>
+    </form>
+
+</div>
+
+{% endblock %}
