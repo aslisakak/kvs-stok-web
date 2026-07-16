@@ -1,0 +1,67 @@
+{% extends "stok/base.html" %}
+
+{% block title %}Yeni Ürün Ekle{% endblock %}
+
+{% block extra_head %}
+<style>
+    .field textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #b9b9b9;
+        border-radius: 6px;
+        background: white;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 14px;
+        resize: vertical;
+    }
+
+    .form-info {
+        margin: 6px 0 16px;
+        color: #666;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="dialog-card">
+    <h1 class="dialog-title">{{ sayfa_basligi }}</h1>
+
+    <form method="post">
+        {% csrf_token %}
+
+        {% for alan in form %}
+            <div class="field">
+                <label for="{{ alan.id_for_label }}">
+                    {{ alan.label }}
+                </label>
+
+                {{ alan }}
+
+                {% if alan.name == "seri_numaralari" %}
+                    <div class="form-info">
+                        Seri numaralarını her satıra bir tane gelecek şekilde yazın.
+                    </div>
+                {% endif %}
+
+                {% if alan.errors %}
+                    {{ alan.errors }}
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <div class="dialog-actions">
+            <button type="submit" class="btn">
+                Kaydet
+            </button>
+
+            <a href="{% url 'stok:urun_listesi' %}" class="btn secondary">
+                İptal
+            </a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

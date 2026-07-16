@@ -1,88 +1,274 @@
 {% extends "stok/base.html" %}
+
 {% block title %}Stoklar - KVS Stok Takip{% endblock %}
+
+{% block extra_head %}
+<style>
+    .urun-grup-satiri {
+        background: #d9d9d9;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .urun-grup-satiri:hover {
+        background: #cccccc;
+    }
+
+    .urun-grup-baslik {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+    }
+
+    .ac-kapat-isareti {
+        width: 18px;
+        font-size: 14px;
+        transition: transform .15s ease;
+    }
+
+    .urun-grup-satiri.kapali .ac-kapat-isareti {
+        transform: rotate(-90deg);
+    }
+
+    .grup-adet {
+        text-align: center;
+        font-weight: bold;
+    }
+
+    .seri-satiri td:first-child {
+        padding-left: 45px;
+        color: #555;
+    }
+
+    .seri-satiri.gizli {
+        display: none;
+    }
+
+    .seri-etiketi {
+        color: #777;
+        font-size: 12px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
+
 <h1 class="page-heading">📦 STOKLAR</h1>
+
 <div class="panel">
     <div class="toolbar">
         <form method="get" class="search-form">
-            <input class="search-input" type="text" name="q" value="{{ arama }}" placeholder="🔍 Ürün veya seri numarası ara...">
-            <button class="btn" type="submit">Ara</button>
+            <input
+                class="search-input"
+                type="text"
+                name="q"
+                value="{{ arama }}"
+                placeholder="🔍 Ürün veya seri numarası ara..."
+            >
+
+            <button class="btn" type="submit">
+                Ara
+            </button>
         </form>
-        <a class="btn" href="{% url 'stok:urun_ekle' %}">➕ Yeni Ürün</a>
-        <a id="editBtn" class="btn disabled" href="#">Düzenle</a>
-        <a id="inBtn" class="btn disabled" href="#">📥 Stok Girişi</a>
-        <a id="outBtn" class="btn disabled" href="#">📤 Stok Çıkışı</a>
-        <a id="historyBtn" class="btn disabled" href="#">Hareketler</a>
-        <a class="btn secondary" href="{% url 'stok:excel_aktar' %}">Excel</a>
-        <a class="btn secondary" href="{% url 'stok:excel_ice_aktar' %}">Excel’den Aktar</a>
-        <button id="deleteBtn" class="btn danger" type="button" disabled>Sil</button>
+
+        <a class="btn" href="{% url 'stok:urun_ekle' %}">
+            ➕ Yeni Ürün
+        </a>
+
+        <a id="editBtn" class="btn disabled" href="#">
+            Düzenle
+        </a>
+
+        <a id="inBtn" class="btn disabled" href="#">
+            📥 Stok Girişi
+        </a>
+
+        <a id="outBtn" class="btn disabled" href="#">
+            📤 Stok Çıkışı
+        </a>
+
+        <a id="historyBtn" class="btn disabled" href="#">
+            Hareketler
+        </a>
+
+        <a class="btn secondary" href="{% url 'stok:excel_aktar' %}">
+            Excel
+        </a>
+
+        <a
+            class="btn secondary"
+            href="{% url 'stok:excel_ice_aktar' %}"
+        >
+            Excel’den Aktar
+        </a>
+
+        <button
+            id="deleteBtn"
+            class="btn danger"
+            type="button"
+            disabled
+        >
+            Sil
+        </button>
     </div>
 
     <div class="table-wrap">
         <table>
             <thead>
                 <tr>
-                    <th>Ürün Adı</th>
-                    <th>Seri No</th>
+                    <th>Ürün Adı / Seri No</th>
                     <th>Giriş Tarihi</th>
+                    <th>Durum</th>
                     <th>Adet</th>
                 </tr>
             </thead>
+
             <tbody>
-                {% for urun in urunler %}
-                    <tr class="selectable-row {% if urun.adet == 0 %}stokta-yok{% endif %}" data-id="{{ urun.id }}">
-                        <td>{{ urun.urun_adi }}</td>
-                        <td>{{ urun.seri_no }}</td>
-                        <td>{{ urun.giris_tarihi|date:"d.m.Y" }}</td>
-                        <td>{{ urun.adet }}</td>
+                {% for grup in urun_gruplari %}
+                    <tr
+                        class="urun-grup-satiri"
+                        data-grup="grup-{{ forloop.counter }}"
+                    >
+                        <td>
+                            <div class="urun-grup-baslik">
+                                <span class="ac-kapat-isareti">▼</span>
+                                <span>{{ grup.urun_adi }}</span>
+                            </div>
+                        </td>
+
+                        <td>-</td>
+
+                        <td>
+                            {% if grup.toplam_adet > 0 %}
+                                Stokta
+                            {% else %}
+                                Stokta Yok
+                            {% endif %}
+                        </td>
+
+                        <td class="grup-adet">
+                            {{ grup.toplam_adet }}
+                        </td>
                     </tr>
+
+                    {% for urun in grup.kayitlar %}
+                        <tr
+                            class="
+                                seri-satiri
+                                selectable-row
+                                grup-{{ forloop.parentloop.counter }}
+                                {% if urun.adet == 0 %}stokta-yok{% endif %}
+                            "
+                            data-id="{{ urun.id }}"
+                            data-edit-url="{% url 'stok:urun_duzenle' urun.id %}"
+                            data-in-url="{% url 'stok:stok_girisi' urun.id %}"
+                            data-out-url="{% url 'stok:stok_cikisi' urun.id %}"
+                            data-history-url="{% url 'stok:hareketler' urun.id %}"
+                            data-delete-url="{% url 'stok:urun_sil' urun.id %}"
+                        >
+                            <td>
+                                <span class="seri-etiketi">Seri No:</span>
+                                {{ urun.seri_no }}
+                            </td>
+
+                            <td>
+                                {{ urun.giris_tarihi|date:"d.m.Y" }}
+                            </td>
+
+                            <td>
+                                {% if urun.adet > 0 %}
+                                    🟢
+                                {% else %}
+                                    🔴
+                                {% endif %}
+                            </td>
+
+                            <td>{{ urun.adet }}</td>
+                        </tr>
+                    {% endfor %}
+
                 {% empty %}
-                    <tr><td colspan="4" class="empty">Kayıt bulunamadı.</td></tr>
+                    <tr>
+                        <td colspan="4" class="empty">
+                            Kayıt bulunamadı.
+                        </td>
+                    </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
-<form id="deleteForm" method="post" style="display:none;">{% csrf_token %}</form>
+
+<form id="deleteForm" method="post" style="display:none;">
+    {% csrf_token %}
+</form>
+
 {% endblock %}
+
 {% block scripts %}
 <script>
 (() => {
-    let selectedId = null;
-    const rows = document.querySelectorAll('.selectable-row');
-    const editBtn = document.getElementById('editBtn');
-    const inBtn = document.getElementById('inBtn');
-    const outBtn = document.getElementById('outBtn');
-    const historyBtn = document.getElementById('historyBtn');
-    const deleteBtn = document.getElementById('deleteBtn');
-    const deleteForm = document.getElementById('deleteForm');
+    let selectedRow = null;
+
+    const rows = document.querySelectorAll(".selectable-row");
+    const groupRows = document.querySelectorAll(".urun-grup-satiri");
+
+    const editBtn = document.getElementById("editBtn");
+    const inBtn = document.getElementById("inBtn");
+    const outBtn = document.getElementById("outBtn");
+    const historyBtn = document.getElementById("historyBtn");
+    const deleteBtn = document.getElementById("deleteBtn");
+    const deleteForm = document.getElementById("deleteForm");
 
     function setLink(button, url) {
         button.href = url;
-        button.classList.remove('disabled');
+        button.classList.remove("disabled");
     }
 
-    rows.forEach(row => {
-        row.addEventListener('click', () => {
-            rows.forEach(item => item.classList.remove('selected'));
-            row.classList.add('selected');
-            selectedId = row.dataset.id;
-            setLink(editBtn, `/urun/${selectedId}/duzenle/`);
-            setLink(inBtn, `/urun/${selectedId}/stok-girisi/`);
-            setLink(outBtn, `/urun/${selectedId}/stok-cikisi/`);
-            setLink(historyBtn, `/urun/${selectedId}/hareketler/`);
-            deleteBtn.disabled = false;
-        });
+    groupRows.forEach(groupRow => {
+        groupRow.addEventListener("click", () => {
+            const groupName = groupRow.dataset.grup;
+            const childRows = document.querySelectorAll("." + groupName);
 
-        row.addEventListener('dblclick', () => {
-            window.location.href = `/urun/${row.dataset.id}/duzenle/`;
+            const kapatilacak = !groupRow.classList.contains("kapali");
+
+            groupRow.classList.toggle("kapali", kapatilacak);
+
+            childRows.forEach(childRow => {
+                childRow.classList.toggle("gizli", kapatilacak);
+            });
         });
     });
 
-    deleteBtn.addEventListener('click', () => {
-        if (!selectedId) return;
-        if (confirm('Seçili ürün silinsin mi?')) {
-            deleteForm.action = `/urun/${selectedId}/sil/`;
+    rows.forEach(row => {
+        row.addEventListener("click", event => {
+            event.stopPropagation();
+
+            rows.forEach(item => item.classList.remove("selected"));
+            row.classList.add("selected");
+            selectedRow = row;
+
+            setLink(editBtn, row.dataset.editUrl);
+            setLink(inBtn, row.dataset.inUrl);
+            setLink(outBtn, row.dataset.outUrl);
+            setLink(historyBtn, row.dataset.historyUrl);
+
+            deleteBtn.disabled = false;
+        });
+
+        row.addEventListener("dblclick", event => {
+            event.stopPropagation();
+            window.location.href = row.dataset.editUrl;
+        });
+    });
+
+    deleteBtn.addEventListener("click", () => {
+        if (!selectedRow) {
+            return;
+        }
+
+        if (confirm("Seçili seri numarası silinsin mi?")) {
+            deleteForm.action = selectedRow.dataset.deleteUrl;
             deleteForm.submit();
         }
     });

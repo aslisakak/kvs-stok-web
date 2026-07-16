@@ -53,6 +53,67 @@ class UrunForm(forms.ModelForm):
         return adet
 
 
+class TopluUrunForm(forms.Form):
+    urun_adi = forms.CharField(
+        max_length=200,
+        label="Ürün Adı",
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": "Örneğin: LogTag TRIX-16",
+            }
+        ),
+    )
+
+    giris_tarihi = forms.DateField(
+        label="Giriş Tarihi",
+        widget=forms.DateInput(
+            attrs={
+                "type": "date",
+            }
+        ),
+    )
+
+    seri_numaralari = forms.CharField(
+        label="Seri Numaraları",
+        widget=forms.Textarea(
+            attrs={
+                "rows": 12,
+                "placeholder": (
+                    "Her satıra bir seri numarası yazın:\n"
+                    "D001031345F5\n"
+                    "D00103134450\n"
+                    "D001031347ZT"
+                ),
+            }
+        ),
+    )
+
+    def clean_seri_numaralari(self):
+        metin = self.cleaned_data["seri_numaralari"]
+
+        seri_numaralari = []
+        gorulenler = set()
+
+        for satir in metin.splitlines():
+            seri_no = satir.strip()
+
+            if not seri_no:
+                continue
+
+            anahtar = seri_no.casefold()
+
+            if anahtar not in gorulenler:
+                gorulenler.add(anahtar)
+                seri_numaralari.append(seri_no)
+
+        if not seri_numaralari:
+            raise forms.ValidationError(
+                "En az bir seri numarası girmelisiniz."
+            )
+
+        return seri_numaralari
+
+
 class StokMiktarForm(forms.Form):
     miktar = forms.IntegerField(
         min_value=1,
@@ -67,6 +128,7 @@ class StokMiktarForm(forms.Form):
     aciklama = forms.CharField(
         required=False,
         max_length=300,
+        label="Açıklama",
         widget=forms.TextInput(
             attrs={
                 "placeholder": "Açıklama",
@@ -105,8 +167,8 @@ class FirmaGonderiForm(forms.ModelForm):
             ),
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def _init_(self, *args, **kwargs):
+        super()._init_(*args, **kwargs)
 
         self.fields["stok_urunu"].required = False
 
@@ -120,15 +182,22 @@ class FirmaGonderiForm(forms.ModelForm):
         )
 
     def clean(self):
-        cleaned = super().clean()
+        cleaned_data = super().clean()
 
-        stok = cleaned.get("stok_urunu")
+        stok_urunu = cleaned_data.get("stok_urunu")
+        urun_adi = cleaned_data.get("urun_adi", "").strip()
 
-        if stok:
-            cleaned["urun_adi"] = stok.urun_adi
-            cleaned["seri_no"] = stok.seri_no
+        if stok_urunu:
+            cleaned_data["urun_adi"] = stok_urunu.urun_adi
+            cleaned_data["seri_no"] = stok_urunu.seri_no
 
-        return cleaned
+        elif not urun_adi:
+            self.add_error(
+                "urun_adi",
+                "Stoktan ürün seçin veya ürün adını manuel girin.",
+            )
+
+        return cleaned_data
 
 
 class DemoCihazForm(forms.ModelForm):
@@ -192,6 +261,7 @@ class SteriSenseForm(forms.ModelForm):
             ),
         }
 
+
 class ExcelIceriAktarForm(forms.Form):
     excel_dosyasi = forms.FileField(
         label="Excel Dosyası",
@@ -200,6 +270,10 @@ class ExcelIceriAktarForm(forms.Form):
 
     def clean_excel_dosyasi(self):
         dosya = self.cleaned_data["excel_dosyasi"]
+
         if not dosya.name.lower().endswith(".xlsx"):
-            raise forms.ValidationError("Yalnızca .xlsx uzantılı dosya yükleyebilirsiniz.")
+            raise forms.ValidationError(
+                "Yalnızca .xlsx uzantılı dosya yükleyebilirsiniz."
+            )
+
         return dosya

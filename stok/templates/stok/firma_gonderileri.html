@@ -2,9 +2,57 @@
 
 {% block title %}Firma Gönderileri{% endblock %}
 
+{% block extra_head %}
+<style>
+    .firma-grup-satiri {
+        background: #d9d9d9;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .firma-grup-satiri:hover {
+        background: #cccccc;
+    }
+
+    .firma-grup-baslik {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+    }
+
+    .ac-kapat-isareti {
+        width: 18px;
+        font-size: 14px;
+        transition: transform .15s ease;
+    }
+
+    .firma-grup-satiri.kapali .ac-kapat-isareti {
+        transform: rotate(-90deg);
+    }
+
+    .gonderi-satiri td:first-child {
+        padding-left: 45px;
+    }
+
+    .gonderi-satiri.gizli {
+        display: none;
+    }
+
+    .islem-alani {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .islem-alani form {
+        margin: 0;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 
-<h1 class="page-heading">FİRMA GÖNDERİLERİ</h1>
+<h1 class="page-heading">🚚 FİRMA GÖNDERİLERİ</h1>
 
 <div class="panel">
 
@@ -42,8 +90,7 @@
         <table>
             <thead>
                 <tr>
-                    <th>Firma Adı</th>
-                    <th>Ürün Adı</th>
+                    <th>Firma / Ürün</th>
                     <th>Seri No</th>
                     <th>Gönderim Tarihi</th>
                     <th>Notlar</th>
@@ -52,61 +99,99 @@
             </thead>
 
             <tbody>
-                {% for gonderi in gonderiler %}
-                    <tr>
-                        <td>{{ gonderi.firma_adi }}</td>
-                        <td>{{ gonderi.urun_adi }}</td>
-                        <td>{{ gonderi.seri_no|default:"-" }}</td>
+                {% for grup in firma_gruplari %}
+
+                    <tr
+                        class="firma-grup-satiri"
+                        data-grup="firma-{{ forloop.counter }}"
+                    >
                         <td>
-                            {{ gonderi.gonderim_tarihi|date:"d.m.Y" }}
-                        </td>
-                        <td>{{ gonderi.notlar|default:"-" }}</td>
-
-                        <td>
-                            <div style="display:flex; gap:6px;">
-                                <a
-                                    href="{% url 'stok:firma_gonderi_duzenle' gonderi.id %}"
-                                    class="btn"
-                                >
-                                    Düzenle
-                                </a>
-
-                                <form
-                                    method="post"
-                                    action="{% url 'stok:firma_gonderi_geri_al' gonderi.id %}"
-                                    onsubmit="return confirm('Gönderi geri alınsın mı?');"
-                                >
-                                    {% csrf_token %}
-
-                                    <button
-                                        type="submit"
-                                        class="btn secondary"
-                                    >
-                                        Geri Al
-                                    </button>
-                                </form>
-
-                                <form
-                                    method="post"
-                                    action="{% url 'stok:firma_gonderi_sil' gonderi.id %}"
-                                    onsubmit="return confirm('Gönderi silinsin mi?');"
-                                >
-                                    {% csrf_token %}
-
-                                    <button
-                                        type="submit"
-                                        class="btn danger"
-                                    >
-                                        Sil
-                                    </button>
-                                </form>
+                            <div class="firma-grup-baslik">
+                                <span class="ac-kapat-isareti">▼</span>
+                                <span>{{ grup.firma_adi }}</span>
                             </div>
                         </td>
+
+                        <td>
+                            {{ grup.toplam_gonderi }} gönderi
+                        </td>
+
+                        <td>
+                            Son gönderim:
+                            {{ grup.son_gonderim_tarihi|date:"d.m.Y" }}
+                        </td>
+
+                        <td>-</td>
+                        <td>-</td>
                     </tr>
+
+                    {% for gonderi in grup.gonderiler %}
+                        <tr
+                            class="
+                                gonderi-satiri
+                                firma-{{ forloop.parentloop.counter }}
+                            "
+                        >
+                            <td>{{ gonderi.urun_adi }}</td>
+
+                            <td>
+                                {{ gonderi.seri_no|default:"-" }}
+                            </td>
+
+                            <td>
+                                {{ gonderi.gonderim_tarihi|date:"d.m.Y" }}
+                            </td>
+
+                            <td>
+                                {{ gonderi.notlar|default:"-" }}
+                            </td>
+
+                            <td>
+                                <div class="islem-alani">
+                                    <a
+                                        href="{% url 'stok:firma_gonderi_duzenle' gonderi.id %}"
+                                        class="btn"
+                                    >
+                                        Düzenle
+                                    </a>
+
+                                    <form
+                                        method="post"
+                                        action="{% url 'stok:firma_gonderi_geri_al' gonderi.id %}"
+                                        onsubmit="return confirm('Gönderi geri alınsın mı?');"
+                                    >
+                                        {% csrf_token %}
+
+                                        <button
+                                            type="submit"
+                                            class="btn secondary"
+                                        >
+                                            Geri Al
+                                        </button>
+                                    </form>
+
+                                    <form
+                                        method="post"
+                                        action="{% url 'stok:firma_gonderi_sil' gonderi.id %}"
+                                        onsubmit="return confirm('Gönderi silinsin mi?');"
+                                    >
+                                        {% csrf_token %}
+
+                                        <button
+                                            type="submit"
+                                            class="btn danger"
+                                        >
+                                            Sil
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
 
                 {% empty %}
                     <tr>
-                        <td colspan="6" class="empty">
+                        <td colspan="5" class="empty">
                             Henüz firma gönderisi bulunmuyor.
                         </td>
                     </tr>
@@ -117,4 +202,40 @@
 
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+    const firmaSatirlari = document.querySelectorAll(
+        ".firma-grup-satiri"
+    );
+
+    firmaSatirlari.forEach(firmaSatiri => {
+        firmaSatiri.addEventListener("click", () => {
+            const grupAdi = firmaSatiri.dataset.grup;
+
+            const gonderiler = document.querySelectorAll(
+                "." + grupAdi
+            );
+
+            const kapatilacak = !firmaSatiri.classList.contains(
+                "kapali"
+            );
+
+            firmaSatiri.classList.toggle(
+                "kapali",
+                kapatilacak
+            );
+
+            gonderiler.forEach(gonderi => {
+                gonderi.classList.toggle(
+                    "gizli",
+                    kapatilacak
+                );
+            });
+        });
+    });
+})();
+</script>
 {% endblock %}

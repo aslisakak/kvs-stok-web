@@ -18,6 +18,7 @@ from .forms import (
     FirmaGonderiForm,
     SteriSenseForm,
     StokMiktarForm,
+    TopluUrunForm,
     UrunForm,
 )
 
@@ -239,7 +240,12 @@ def excel_ice_aktar(request):
 @login_required
 def urun_listesi(request):
     arama = request.GET.get("q", "").strip()
-    urunler = Urun.objects.all()
+
+    urunler = Urun.objects.all().order_by(
+        "urun_adi",
+        "giris_tarihi",
+        "seri_no",
+    )
 
     if arama:
         urunler = urunler.filter(
@@ -247,11 +253,28 @@ def urun_listesi(request):
             | Q(seri_no__icontains=arama)
         )
 
+    grup_sozlugu = {}
+
+    for urun in urunler:
+        anahtar = urun.urun_adi.strip().casefold()
+
+        if anahtar not in grup_sozlugu:
+            grup_sozlugu[anahtar] = {
+                "urun_adi": urun.urun_adi,
+                "toplam_adet": 0,
+                "kayitlar": [],
+            }
+
+        grup_sozlugu[anahtar]["toplam_adet"] += urun.adet
+        grup_sozlugu[anahtar]["kayitlar"].append(urun)
+
+    urun_gruplari = list(grup_sozlugu.values())
+
     return render(
         request,
         "stok/urun_listesi.html",
         {
-            "urunler": urunler,
+            "urun_gruplari": urun_gruplari,
             "arama": arama,
             "aktif_menu": "stoklar",
         },
@@ -260,24 +283,57 @@ def urun_listesi(request):
 
 @login_required
 def urun_ekle(request):
-    form = UrunForm(request.POST or None)
+    form = TopluUrunForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
+        urun_adi = form.cleaned_data["urun_adi"].strip()
+        giris_tarihi = form.cleaned_data["giris_tarihi"]
+        seri_numaralari = form.cleaned_data["seri_numaralari"]
+
+        eklenen = 0
+        atlanan = 0
+
         with transaction.atomic():
-            urun = form.save()
-            StokHareketi.objects.create(
-                urun=urun,
-                islem_turu="giris",
-                miktar=urun.adet,
-                aciklama="Yeni ürün kaydı oluşturuldu.",
+            for seri_no in seri_numaralari:
+                if Urun.objects.filter(
+                    seri_no__iexact=seri_no
+                ).exists():
+                    atlanan += 1
+                    continue
+
+                urun = Urun.objects.create(
+                    urun_adi=urun_adi,
+                    seri_no=seri_no,
+                    giris_tarihi=giris_tarihi,
+                    adet=1,
+                )
+
+                StokHareketi.objects.create(
+                    urun=urun,
+                    islem_turu="giris",
+                    miktar=1,
+                    aciklama="Toplu seri numarası kaydıyla eklendi.",
+                )
+
+                eklenen += 1
+
+        if eklenen:
+            messages.success(
+                request,
+                f"{eklenen} seri numarası stoğa eklendi."
             )
 
-        messages.success(request, "Ürün stoğa eklendi.")
+        if atlanan:
+            messages.warning(
+                request,
+                f"{atlanan} seri numarası daha önce kayıtlı olduğu için atlandı."
+            )
+
         return redirect("stok:urun_listesi")
 
     return render(
         request,
-        "stok/urun_formu.html",
+        "stok/toplu_urun_formu.html",
         {
             "form": form,
             "sayfa_basligi": "YENİ ÜRÜN EKLE",
@@ -449,9 +505,17 @@ def excel_aktar(request):
 # --------------------------------------------------
 
 @login_required
+@login_required
 def firma_gonderileri(request):
     arama = request.GET.get("q", "").strip()
-    gonderiler = FirmaGonderi.objects.filter(aktif=True)
+
+    gonderiler = FirmaGonderi.objects.filter(
+        aktif=True
+    ).order_by(
+        "firma_adi",
+        "-gonderim_tarihi",
+        "-id",
+    )
 
     if arama:
         gonderiler = gonderiler.filter(
@@ -461,11 +525,37 @@ def firma_gonderileri(request):
             | Q(notlar__icontains=arama)
         )
 
+    firma_sozlugu = {}
+
+    for gonderi in gonderiler:
+        anahtar = gonderi.firma_adi.strip().casefold()
+
+        if anahtar not in firma_sozlugu:
+            firma_sozlugu[anahtar] = {
+                "firma_adi": gonderi.firma_adi,
+                "toplam_gonderi": 0,
+                "son_gonderim_tarihi": gonderi.gonderim_tarihi,
+                "gonderiler": [],
+            }
+
+        firma_sozlugu[anahtar]["toplam_gonderi"] += 1
+        firma_sozlugu[anahtar]["gonderiler"].append(gonderi)
+
+        if (
+            gonderi.gonderim_tarihi
+            > firma_sozlugu[anahtar]["son_gonderim_tarihi"]
+        ):
+            firma_sozlugu[anahtar]["son_gonderim_tarihi"] = (
+                gonderi.gonderim_tarihi
+            )
+
+    firma_gruplari = list(firma_sozlugu.values())
+
     return render(
         request,
         "stok/firma_gonderileri.html",
         {
-            "gonderiler": gonderiler,
+            "firma_gruplari": firma_gruplari,
             "arama": arama,
             "aktif_menu": "gonderiler",
         },
