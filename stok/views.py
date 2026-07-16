@@ -568,31 +568,50 @@ def firma_gonderi_ekle(request):
 
     if request.method == "POST" and form.is_valid():
         stok_urunu = form.cleaned_data.get("stok_urunu")
+        urun_adi = form.cleaned_data.get("urun_adi", "").strip()
+        seri_no = form.cleaned_data.get("seri_no", "").strip()
 
-        if stok_urunu and stok_urunu.adet < 1:
-            form.add_error("stok_urunu", "Bu ürün şu anda stokta bulunmuyor.")
+        # Stoktan seçim yapılmadıysa manuel girilen bilgilerle ürünü bul.
+        if not stok_urunu and urun_adi and seri_no:
+            stok_urunu = Urun.objects.filter(
+                urun_adi__iexact=urun_adi,
+                seri_no__iexact=seri_no,
+                adet__gt=0,
+            ).first()
+
+        if not stok_urunu:
+            form.add_error(
+                "seri_no",
+                "Bu ürün ve seri numarası stokta bulunamadı.",
+            )
         else:
             with transaction.atomic():
                 gonderi = form.save(commit=False)
 
-                if stok_urunu:
-                    gonderi.urun_adi = stok_urunu.urun_adi
-                    gonderi.seri_no = stok_urunu.seri_no
-                    stok_urunu.adet -= 1
-                    stok_urunu.save(update_fields=["adet"])
-                    StokHareketi.objects.create(
-                        urun=stok_urunu,
-                        islem_turu="firma_gonderisi",
-                        miktar=-1,
-                        aciklama=(
-                            f"Firma: {gonderi.firma_adi}. {gonderi.notlar}"
-                        ).strip(),
-                    )
-
+                gonderi.stok_urunu = stok_urunu
+                gonderi.urun_adi = stok_urunu.urun_adi
+                gonderi.seri_no = stok_urunu.seri_no
                 gonderi.aktif = True
                 gonderi.save()
 
-            messages.success(request, "Firma gönderisi kaydedildi.")
+                stok_urunu.adet -= 1
+                stok_urunu.save(update_fields=["adet"])
+
+                StokHareketi.objects.create(
+                    urun=stok_urunu,
+                    islem_turu="firma_gonderisi",
+                    miktar=-1,
+                    aciklama=(
+                        f"Firma: {gonderi.firma_adi}. "
+                        f"{gonderi.notlar}"
+                    ).strip(),
+                )
+
+            messages.success(
+                request,
+                "Firma gönderisi kaydedildi ve ürün stoktan düşüldü.",
+            )
+
             return redirect("stok:firma_gonderileri")
 
     return render(
