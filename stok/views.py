@@ -761,7 +761,11 @@ def firma_gonderileri_excel(request):
 @login_required
 def demo_cihazlar(request):
     arama = request.GET.get("q", "").strip()
-    demo_listesi = DemoCihaz.objects.all()
+
+    demo_listesi = DemoCihaz.objects.all().order_by(
+        "urun_adi",
+        "seri_no",
+    )
 
     if arama:
         demo_listesi = demo_listesi.filter(
@@ -769,11 +773,28 @@ def demo_cihazlar(request):
             | Q(seri_no__icontains=arama)
         )
 
+    grup_sozlugu = {}
+
+    for demo in demo_listesi:
+        anahtar = demo.urun_adi.strip().casefold()
+
+        if anahtar not in grup_sozlugu:
+            grup_sozlugu[anahtar] = {
+                "urun_adi": demo.urun_adi,
+                "toplam_adet": 0,
+                "cihazlar": [],
+            }
+
+        grup_sozlugu[anahtar]["toplam_adet"] += 1
+        grup_sozlugu[anahtar]["cihazlar"].append(demo)
+
+    demo_gruplari = list(grup_sozlugu.values())
+
     return render(
         request,
         "stok/demo_cihazlar.html",
         {
-            "demo_listesi": demo_listesi,
+            "demo_gruplari": demo_gruplari,
             "arama": arama,
             "aktif_menu": "demo",
         },
@@ -825,7 +846,12 @@ def basit_sayfa(request, baslik, aktif_menu):
 def sterisense(request):
     arama = request.GET.get("q", "").strip()
 
-    kayitlar = SteriSenseKaydi.objects.all()
+    kayitlar = SteriSenseKaydi.objects.all().order_by(
+        "bayi",
+        "firma",
+        "urun_adi",
+        "seri_no",
+    )
 
     if arama:
         kayitlar = kayitlar.filter(
@@ -836,11 +862,98 @@ def sterisense(request):
             | Q(notlar__icontains=arama)
         )
 
+    bayi_sozlugu = {}
+
+    for kayit in kayitlar:
+        bayi_anahtari = kayit.bayi.strip().casefold()
+        firma_anahtari = kayit.firma.strip().casefold()
+        urun_anahtari = kayit.urun_adi.strip().casefold()
+
+        if bayi_anahtari not in bayi_sozlugu:
+            bayi_sozlugu[bayi_anahtari] = {
+                "bayi": kayit.bayi,
+                "toplam_adet": 0,
+                "firma_sozlugu": {},
+            }
+
+        bayi_grubu = bayi_sozlugu[bayi_anahtari]
+        bayi_grubu["toplam_adet"] += 1
+
+        if firma_anahtari not in bayi_grubu["firma_sozlugu"]:
+            bayi_grubu["firma_sozlugu"][firma_anahtari] = {
+                "firma": kayit.firma,
+                "toplam_adet": 0,
+                "urun_sozlugu": {},
+            }
+
+        firma_grubu = bayi_grubu["firma_sozlugu"][firma_anahtari]
+        firma_grubu["toplam_adet"] += 1
+
+        if urun_anahtari not in firma_grubu["urun_sozlugu"]:
+            firma_grubu["urun_sozlugu"][urun_anahtari] = {
+                "urun_adi": kayit.urun_adi,
+                "toplam_adet": 0,
+                "kayitlar": [],
+            }
+
+        urun_grubu = firma_grubu["urun_sozlugu"][urun_anahtari]
+        urun_grubu["toplam_adet"] += 1
+        urun_grubu["kayitlar"].append(kayit)
+
+    bayi_gruplari = []
+
+    for bayi_index, bayi_grubu in enumerate(
+        bayi_sozlugu.values(),
+        start=1,
+    ):
+        bayi_id = f"bayi-{bayi_index}"
+        firmalar = []
+
+        for firma_index, firma_grubu in enumerate(
+            bayi_grubu["firma_sozlugu"].values(),
+            start=1,
+        ):
+            firma_id = f"{bayi_id}-firma-{firma_index}"
+            urunler = []
+
+            for urun_index, urun_grubu in enumerate(
+                firma_grubu["urun_sozlugu"].values(),
+                start=1,
+            ):
+                urun_id = f"{firma_id}-urun-{urun_index}"
+
+                urunler.append(
+                    {
+                        "id": urun_id,
+                        "urun_adi": urun_grubu["urun_adi"],
+                        "toplam_adet": urun_grubu["toplam_adet"],
+                        "kayitlar": urun_grubu["kayitlar"],
+                    }
+                )
+
+            firmalar.append(
+                {
+                    "id": firma_id,
+                    "firma": firma_grubu["firma"],
+                    "toplam_adet": firma_grubu["toplam_adet"],
+                    "urunler": urunler,
+                }
+            )
+
+        bayi_gruplari.append(
+            {
+                "id": bayi_id,
+                "bayi": bayi_grubu["bayi"],
+                "toplam_adet": bayi_grubu["toplam_adet"],
+                "firmalar": firmalar,
+            }
+        )
+
     return render(
         request,
         "stok/sterisense.html",
         {
-            "kayitlar": kayitlar,
+            "bayi_gruplari": bayi_gruplari,
             "arama": arama,
             "aktif_menu": "sterisense",
         },

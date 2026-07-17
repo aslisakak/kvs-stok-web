@@ -2,6 +2,69 @@
 
 {% block title %}SteriSense{% endblock %}
 
+{% block extra_head %}
+<style>
+    .grup-satiri {
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .bayi-satiri {
+        background: #d0d0d0;
+    }
+
+    .firma-satiri {
+        background: #dedede;
+    }
+
+    .urun-satiri {
+        background: #eeeeee;
+    }
+
+    .grup-satiri:hover {
+        filter: brightness(.96);
+    }
+
+    .grup-baslik {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .ok {
+        display: inline-block;
+        width: 16px;
+        transition: transform .15s ease;
+    }
+
+    .grup-satiri.acik .ok {
+        transform: rotate(90deg);
+    }
+
+    .firma-satiri td:first-child {
+        padding-left: 35px;
+    }
+
+    .urun-satiri td:first-child {
+        padding-left: 65px;
+    }
+
+    .kayit-satiri td:first-child {
+        padding-left: 95px;
+    }
+
+    .islem-alani {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .islem-alani form {
+        margin: 0;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 
 <h1 class="page-heading">STERISENSE</h1>
@@ -41,50 +104,140 @@
                     <th>Seri No</th>
                     <th>Tarih</th>
                     <th>Notlar</th>
+                    <th>Adet</th>
                     <th>İşlemler</th>
                 </tr>
             </thead>
 
             <tbody>
-                {% for kayit in kayitlar %}
-                    <tr>
-                        <td>{{ kayit.bayi }}</td>
-                        <td>{{ kayit.firma }}</td>
-                        <td>{{ kayit.urun_adi }}</td>
-                        <td>{{ kayit.seri_no }}</td>
-                        <td>{{ kayit.tarih|date:"d.m.Y" }}</td>
-                        <td>{{ kayit.notlar|default:"-" }}</td>
+                {% for bayi in bayi_gruplari %}
 
+                    <tr
+                        class="grup-satiri bayi-satiri"
+                        data-id="{{ bayi.id }}"
+                    >
                         <td>
-                            <div style="display:flex; gap:6px;">
-                                <a
-                                    href="{% url 'stok:sterisense_duzenle' kayit.id %}"
-                                    class="btn"
-                                >
-                                    Düzenle
-                                </a>
-
-                                <form
-                                    method="post"
-                                    action="{% url 'stok:sterisense_sil' kayit.id %}"
-                                    onsubmit="return confirm('Bu kayıt silinsin mi?');"
-                                >
-                                    {% csrf_token %}
-
-                                    <button
-                                        type="submit"
-                                        class="btn danger"
-                                    >
-                                        Sil
-                                    </button>
-                                </form>
+                            <div class="grup-baslik">
+                                <span class="ok">▶️</span>
+                                <span>{{ bayi.bayi }}</span>
                             </div>
                         </td>
+
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td>{{ bayi.toplam_adet }}</td>
+                        <td></td>
                     </tr>
+
+                    {% for firma in bayi.firmalar %}
+
+                        <tr
+                            class="grup-satiri firma-satiri"
+                            data-id="{{ firma.id }}"
+                            data-parent="{{ bayi.id }}"
+                            style="display:none;"
+                        >
+                            <td>{{ bayi.bayi }}</td>
+
+                            <td>
+                                <div class="grup-baslik">
+                                    <span class="ok">▶️</span>
+                                    <span>{{ firma.firma }}</span>
+                                </div>
+                            </td>
+
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td>{{ firma.toplam_adet }}</td>
+                            <td></td>
+                        </tr>
+
+                        {% for urun in firma.urunler %}
+
+                            <tr
+                                class="grup-satiri urun-satiri"
+                                data-id="{{ urun.id }}"
+                                data-parent="{{ firma.id }}"
+                                style="display:none;"
+                            >
+                                <td>{{ bayi.bayi }}</td>
+                                <td>{{ firma.firma }}</td>
+
+                                <td>
+                                    <div class="grup-baslik">
+                                        <span class="ok">▶️</span>
+                                        <span>{{ urun.urun_adi }}</span>
+                                    </div>
+                                </td>
+
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td>{{ urun.toplam_adet }}</td>
+                                <td></td>
+                            </tr>
+
+                            {% for kayit in urun.kayitlar %}
+
+                                <tr
+                                    class="kayit-satiri"
+                                    data-parent="{{ urun.id }}"
+                                    style="display:none;"
+                                >
+                                    <td>{{ kayit.bayi }}</td>
+                                    <td>{{ kayit.firma }}</td>
+                                    <td>{{ kayit.urun_adi }}</td>
+                                    <td>{{ kayit.seri_no }}</td>
+
+                                    <td>
+                                        {{ kayit.tarih|date:"d.m.Y" }}
+                                    </td>
+
+                                    <td>
+                                        {{ kayit.notlar|default:"-" }}
+                                    </td>
+
+                                    <td>1</td>
+
+                                    <td>
+                                        <div class="islem-alani">
+                                            <a
+                                                href="{% url 'stok:sterisense_duzenle' kayit.id %}"
+                                                class="btn"
+                                            >
+                                                Düzenle
+                                            </a>
+
+                                            <form
+                                                method="post"
+                                                action="{% url 'stok:sterisense_sil' kayit.id %}"
+                                                onsubmit="return confirm('Bu kayıt silinsin mi?');"
+                                            >
+                                                {% csrf_token %}
+
+                                                <button
+                                                    type="submit"
+                                                    class="btn danger"
+                                                >
+                                                    Sil
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                            {% endfor %}
+                        {% endfor %}
+                    {% endfor %}
 
                 {% empty %}
                     <tr>
-                        <td colspan="7" class="empty">
+                        <td colspan="8" class="empty">
                             Henüz SteriSense kaydı bulunmuyor.
                         </td>
                     </tr>
@@ -95,4 +248,55 @@
 
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const grupSatirlari = document.querySelectorAll(".grup-satiri");
+
+    function dogrudanAltSatirlariBul(id) {
+        return document.querySelectorAll(
+            'tr[data-parent="' + id + '"]'
+        );
+    }
+
+    function tumAltSatirlariKapat(id) {
+        const altSatirlar = dogrudanAltSatirlariBul(id);
+
+        altSatirlar.forEach(function (satir) {
+            satir.style.display = "none";
+
+            if (satir.classList.contains("grup-satiri")) {
+                satir.classList.remove("acik");
+
+                const altId = satir.dataset.id;
+
+                if (altId) {
+                    tumAltSatirlariKapat(altId);
+                }
+            }
+        });
+    }
+
+    grupSatirlari.forEach(function (grupSatiri) {
+        grupSatiri.addEventListener("click", function () {
+            const id = grupSatiri.dataset.id;
+            const acikMi = grupSatiri.classList.contains("acik");
+            const altSatirlar = dogrudanAltSatirlariBul(id);
+
+            if (acikMi) {
+                grupSatiri.classList.remove("acik");
+                tumAltSatirlariKapat(id);
+            } else {
+                grupSatiri.classList.add("acik");
+
+                altSatirlar.forEach(function (satir) {
+                    satir.style.display = "table-row";
+                });
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

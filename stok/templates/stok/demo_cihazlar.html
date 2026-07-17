@@ -2,6 +2,44 @@
 
 {% block title %}Demo Cihazlar{% endblock %}
 
+{% block extra_head %}
+<style>
+    .demo-grup-satiri {
+        background: #d9d9d9;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .demo-grup-satiri:hover {
+        background: #cccccc;
+    }
+
+    .demo-grup-baslik {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+    }
+
+    .ac-kapat-isareti {
+        width: 18px;
+        font-size: 14px;
+        transition: transform .15s ease;
+    }
+
+    .demo-grup-satiri.kapali .ac-kapat-isareti {
+        transform: rotate(-90deg);
+    }
+
+    .demo-cihaz-satiri td:first-child {
+        padding-left: 45px;
+    }
+
+    .demo-cihaz-satiri.gizli {
+        display: none;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 
 <h1 class="page-heading">DEMO CİHAZLAR</h1>
@@ -35,30 +73,64 @@
         <table>
             <thead>
                 <tr>
-                    <th>Ürün Adı</th>
-                    <th>Seri No</th>
+                    <th>Ürün Adı / Seri No</th>
+                    <th>Adet</th>
                     <th>İşlemler</th>
                 </tr>
             </thead>
 
             <tbody>
-                {% for demo in demo_listesi %}
-                    <tr>
-                        <td>{{ demo.urun_adi }}</td>
-                        <td>{{ demo.seri_no }}</td>
+                {% for grup in demo_gruplari %}
+
+                    <tr
+                        class="demo-grup-satiri"
+                        data-grup="demo-{{ forloop.counter }}"
+                    >
                         <td>
-                            <form
-                                method="post"
-                                action="{% url 'stok:demo_sil' demo.id %}"
-                                onsubmit="return confirm('Bu demo cihaz silinsin mi?');"
-                            >
-                                {% csrf_token %}
-                                <button type="submit" class="btn danger">
-                                    Sil
-                                </button>
-                            </form>
+                            <div class="demo-grup-baslik">
+                                <span class="ac-kapat-isareti">▼</span>
+                                <span>{{ grup.urun_adi }}</span>
+                            </div>
                         </td>
+
+                        <td>
+                            {{ grup.toplam_adet }}
+                        </td>
+
+                        <td>-</td>
                     </tr>
+
+                    {% for demo in grup.cihazlar %}
+                        <tr
+                            class="
+                                demo-cihaz-satiri
+                                demo-{{ forloop.parentloop.counter }}
+                            "
+                        >
+                            <td>
+                                Seri No: {{ demo.seri_no }}
+                            </td>
+
+                            <td>1</td>
+
+                            <td>
+                                <form
+                                    method="post"
+                                    action="{% url 'stok:demo_sil' demo.id %}"
+                                    onsubmit="return confirm('Bu demo cihaz silinsin mi?');"
+                                >
+                                    {% csrf_token %}
+
+                                    <button
+                                        type="submit"
+                                        class="btn danger"
+                                    >
+                                        Sil
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
 
                 {% empty %}
                     <tr>
@@ -73,4 +145,40 @@
 
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+    const grupSatirlari = document.querySelectorAll(
+        ".demo-grup-satiri"
+    );
+
+    grupSatirlari.forEach(grupSatiri => {
+        grupSatiri.addEventListener("click", () => {
+            const grupAdi = grupSatiri.dataset.grup;
+
+            const cihazlar = document.querySelectorAll(
+                "." + grupAdi
+            );
+
+            const kapatilacak = !grupSatiri.classList.contains(
+                "kapali"
+            );
+
+            grupSatiri.classList.toggle(
+                "kapali",
+                kapatilacak
+            );
+
+            cihazlar.forEach(cihaz => {
+                cihaz.classList.toggle(
+                    "gizli",
+                    kapatilacak
+                );
+            });
+        });
+    });
+})();
+</script>
 {% endblock %}

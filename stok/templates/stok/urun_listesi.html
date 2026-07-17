@@ -126,7 +126,7 @@
             <tbody>
                 {% for grup in urun_gruplari %}
                     <tr
-                        class="urun-grup-satiri"
+                        class="urun-grup-satiri kapali"
                         data-grup="grup-{{ forloop.counter }}"
                     >
                         <td>
@@ -156,6 +156,7 @@
                             class="
                                 seri-satiri
                                 selectable-row
+                                gizli
                                 grup-{{ forloop.parentloop.counter }}
                                 {% if urun.adet == 0 %}stokta-yok{% endif %}
                             "
