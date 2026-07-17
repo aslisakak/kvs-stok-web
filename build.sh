@@ -5,4 +5,3 @@ pip install -r requirements.txt
 python manage.py collectstatic --noinput
 python manage.py migrate
 python manage.py load_initial_data_if_empty
-python manage.py createsuperuser --noinput
