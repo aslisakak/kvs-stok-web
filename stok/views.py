@@ -571,7 +571,7 @@ def firma_gonderi_ekle(request):
         urun_adi = form.cleaned_data.get("urun_adi", "").strip()
         seri_no = form.cleaned_data.get("seri_no", "").strip()
 
-        # Stoktan seçim yapılmadıysa manuel girilen bilgilerle ürünü bul.
+        # Stoktan seçim yapılmadıysa manuel girilen bilgilerle ürünü ara.
         if not stok_urunu and urun_adi and seri_no:
             stok_urunu = Urun.objects.filter(
                 urun_adi__iexact=urun_adi,
@@ -579,20 +579,14 @@ def firma_gonderi_ekle(request):
                 adet__gt=0,
             ).first()
 
-        if not stok_urunu:
-            form.add_error(
-                "seri_no",
-                "Bu ürün ve seri numarası stokta bulunamadı.",
-            )
-        else:
-            with transaction.atomic():
-                gonderi = form.save(commit=False)
+        with transaction.atomic():
+            gonderi = form.save(commit=False)
 
+            # Ürün stokta bulunduysa stokla ilişkilendir ve 1 adet düş.
+            if stok_urunu:
                 gonderi.stok_urunu = stok_urunu
                 gonderi.urun_adi = stok_urunu.urun_adi
                 gonderi.seri_no = stok_urunu.seri_no
-                gonderi.aktif = True
-                gonderi.save()
 
                 stok_urunu.adet -= 1
                 stok_urunu.save(update_fields=["adet"])
@@ -607,12 +601,27 @@ def firma_gonderi_ekle(request):
                     ).strip(),
                 )
 
+            # Stokta bulunmadıysa manuel bilgilerle normal kayıt oluştur.
+            else:
+                gonderi.stok_urunu = None
+                gonderi.urun_adi = urun_adi
+                gonderi.seri_no = seri_no
+
+            gonderi.aktif = True
+            gonderi.save()
+
+        if stok_urunu:
             messages.success(
                 request,
                 "Firma gönderisi kaydedildi ve ürün stoktan düşüldü.",
             )
+        else:
+            messages.success(
+                request,
+                "Firma gönderisi manuel olarak kaydedildi. Stoktan düşüm yapılmadı.",
+            )
 
-            return redirect("stok:firma_gonderileri")
+        return redirect("stok:firma_gonderileri")
 
     return render(
         request,
