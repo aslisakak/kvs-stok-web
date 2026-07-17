@@ -18,6 +18,7 @@ from .forms import (
     FirmaGonderiForm,
     SteriSenseForm,
     StokMiktarForm,
+    TopluFirmaGonderiForm,
     TopluUrunForm,
     UrunForm,
 )
@@ -564,61 +565,78 @@ def firma_gonderileri(request):
 
 @login_required
 def firma_gonderi_ekle(request):
-    form = FirmaGonderiForm(request.POST or None)
+    form = TopluFirmaGonderiForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
-        stok_urunu = form.cleaned_data.get("stok_urunu")
-        urun_adi = form.cleaned_data.get("urun_adi", "").strip()
-        seri_no = form.cleaned_data.get("seri_no", "").strip()
+        firma_adi = form.cleaned_data["firma_adi"].strip()
+        urun_adi = form.cleaned_data["urun_adi"].strip()
+        seri_numaralari = form.cleaned_data["seri_numaralari"]
+        gonderim_tarihi = form.cleaned_data["gonderim_tarihi"]
+        notlar = form.cleaned_data["notlar"].strip()
 
-        # Stoktan seçim yapılmadıysa manuel girilen bilgilerle ürünü ara.
-        if not stok_urunu and urun_adi and seri_no:
-            stok_urunu = Urun.objects.filter(
-                urun_adi__iexact=urun_adi,
-                seri_no__iexact=seri_no,
-                adet__gt=0,
-            ).first()
+        eklenen = 0
+        stoktan_dusulen = 0
+        atlanan = 0
 
         with transaction.atomic():
-            gonderi = form.save(commit=False)
+            for seri_no in seri_numaralari:
+                zaten_var = FirmaGonderi.objects.filter(
+                    firma_adi__iexact=firma_adi,
+                    urun_adi__iexact=urun_adi,
+                    seri_no__iexact=seri_no,
+                    gonderim_tarihi=gonderim_tarihi,
+                    aktif=True,
+                ).exists()
 
-            # Ürün stokta bulunduysa stokla ilişkilendir ve 1 adet düş.
-            if stok_urunu:
-                gonderi.stok_urunu = stok_urunu
-                gonderi.urun_adi = stok_urunu.urun_adi
-                gonderi.seri_no = stok_urunu.seri_no
+                if zaten_var:
+                    atlanan += 1
+                    continue
 
-                stok_urunu.adet -= 1
-                stok_urunu.save(update_fields=["adet"])
+                stok_urunu = Urun.objects.filter(
+                    urun_adi__iexact=urun_adi,
+                    seri_no__iexact=seri_no,
+                    adet__gt=0,
+                ).first()
 
-                StokHareketi.objects.create(
-                    urun=stok_urunu,
-                    islem_turu="firma_gonderisi",
-                    miktar=-1,
-                    aciklama=(
-                        f"Firma: {gonderi.firma_adi}. "
-                        f"{gonderi.notlar}"
-                    ).strip(),
+                FirmaGonderi.objects.create(
+                    firma_adi=firma_adi,
+                    stok_urunu=stok_urunu,
+                    urun_adi=urun_adi,
+                    seri_no=seri_no,
+                    gonderim_tarihi=gonderim_tarihi,
+                    notlar=notlar,
+                    aktif=True,
                 )
 
-            # Stokta bulunmadıysa manuel bilgilerle normal kayıt oluştur.
-            else:
-                gonderi.stok_urunu = None
-                gonderi.urun_adi = urun_adi
-                gonderi.seri_no = seri_no
+                if stok_urunu:
+                    stok_urunu.adet -= 1
+                    stok_urunu.save(update_fields=["adet"])
 
-            gonderi.aktif = True
-            gonderi.save()
+                    StokHareketi.objects.create(
+                        urun=stok_urunu,
+                        islem_turu="firma_gonderisi",
+                        miktar=-1,
+                        aciklama=(
+                            f"Firma: {firma_adi}. {notlar}"
+                        ).strip(),
+                    )
 
-        if stok_urunu:
-            messages.success(
+                    stoktan_dusulen += 1
+
+                eklenen += 1
+
+        messages.success(
+            request,
+            (
+                f"{eklenen} gönderi kaydedildi. "
+                f"{stoktan_dusulen} cihaz stoktan düşüldü."
+            ),
+        )
+
+        if atlanan:
+            messages.warning(
                 request,
-                "Firma gönderisi kaydedildi ve ürün stoktan düşüldü.",
-            )
-        else:
-            messages.success(
-                request,
-                "Firma gönderisi manuel olarak kaydedildi. Stoktan düşüm yapılmadı.",
+                f"{atlanan} tekrar eden kayıt atlandı.",
             )
 
         return redirect("stok:firma_gonderileri")
@@ -628,7 +646,7 @@ def firma_gonderi_ekle(request):
         "stok/firma_gonderi_formu.html",
         {
             "form": form,
-            "sayfa_basligi": "YENİ GÖNDERİ",
+            "sayfa_basligi": "YENİ TOPLU GÖNDERİ",
             "aktif_menu": "gonderiler",
         },
     )

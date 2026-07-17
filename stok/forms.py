@@ -11,34 +11,24 @@ from .models import (
 class UrunForm(forms.ModelForm):
     class Meta:
         model = Urun
-
         fields = [
             "urun_adi",
             "seri_no",
             "giris_tarihi",
             "adet",
         ]
-
         widgets = {
             "urun_adi": forms.TextInput(
-                attrs={
-                    "placeholder": "Örneğin: UTRED30",
-                }
+                attrs={"placeholder": "Örneğin: UTRED30"}
             ),
             "seri_no": forms.TextInput(
-                attrs={
-                    "placeholder": "Seri numarası",
-                }
+                attrs={"placeholder": "Seri numarası"}
             ),
             "giris_tarihi": forms.DateInput(
-                attrs={
-                    "type": "date",
-                }
+                attrs={"type": "date"}
             ),
             "adet": forms.NumberInput(
-                attrs={
-                    "min": 0,
-                }
+                attrs={"min": 0}
             ),
         }
 
@@ -67,9 +57,7 @@ class TopluUrunForm(forms.Form):
     giris_tarihi = forms.DateField(
         label="Giriş Tarihi",
         widget=forms.DateInput(
-            attrs={
-                "type": "date",
-            }
+            attrs={"type": "date"}
         ),
     )
 
@@ -119,9 +107,7 @@ class StokMiktarForm(forms.Form):
         min_value=1,
         label="Miktar",
         widget=forms.NumberInput(
-            attrs={
-                "min": 1,
-            }
+            attrs={"min": 1}
         ),
     )
 
@@ -130,9 +116,7 @@ class StokMiktarForm(forms.Form):
         max_length=300,
         label="Açıklama",
         widget=forms.TextInput(
-            attrs={
-                "placeholder": "Açıklama",
-            }
+            attrs={"placeholder": "Açıklama"}
         ),
     )
 
@@ -140,7 +124,6 @@ class StokMiktarForm(forms.Form):
 class FirmaGonderiForm(forms.ModelForm):
     class Meta:
         model = FirmaGonderi
-
         fields = [
             "firma_adi",
             "stok_urunu",
@@ -149,21 +132,16 @@ class FirmaGonderiForm(forms.ModelForm):
             "gonderim_tarihi",
             "notlar",
         ]
-
         widgets = {
             "firma_adi": forms.TextInput(),
             "stok_urunu": forms.Select(),
             "urun_adi": forms.TextInput(),
             "seri_no": forms.TextInput(),
             "gonderim_tarihi": forms.DateInput(
-                attrs={
-                    "type": "date",
-                }
+                attrs={"type": "date"}
             ),
             "notlar": forms.Textarea(
-                attrs={
-                    "rows": 4,
-                }
+                attrs={"rows": 4}
             ),
         }
 
@@ -171,12 +149,10 @@ class FirmaGonderiForm(forms.ModelForm):
         super()._init_(*args, **kwargs)
 
         self.fields["stok_urunu"].required = False
-
         self.fields["stok_urunu"].queryset = (
             Urun.objects.filter(adet__gt=0)
             .order_by("urun_adi", "seri_no")
         )
-
         self.fields["stok_urunu"].empty_label = (
             "Manuel giriş yapacağım"
         )
@@ -200,15 +176,89 @@ class FirmaGonderiForm(forms.ModelForm):
         return cleaned_data
 
 
+class TopluFirmaGonderiForm(forms.Form):
+    firma_adi = forms.CharField(
+        max_length=200,
+        label="Firma Adı",
+        widget=forms.TextInput(
+            attrs={"placeholder": "Firma adını girin"}
+        ),
+    )
+
+    urun_adi = forms.CharField(
+        max_length=200,
+        label="Ürün Adı",
+        widget=forms.TextInput(
+            attrs={"placeholder": "Örneğin: TrackSense Pro"}
+        ),
+    )
+
+    seri_numaralari = forms.CharField(
+        label="Seri Numaraları",
+        widget=forms.Textarea(
+            attrs={
+                "rows": 10,
+                "placeholder": (
+                    "Her satıra bir seri numarası yazın:\n"
+                    "SN001\n"
+                    "SN002\n"
+                    "SN003"
+                ),
+            }
+        ),
+    )
+
+    gonderim_tarihi = forms.DateField(
+        label="Gönderim Tarihi",
+        widget=forms.DateInput(
+            attrs={"type": "date"}
+        ),
+    )
+
+    notlar = forms.CharField(
+        required=False,
+        label="Notlar",
+        widget=forms.Textarea(
+            attrs={
+                "rows": 4,
+                "placeholder": "İsteğe bağlı not",
+            }
+        ),
+    )
+
+    def clean_seri_numaralari(self):
+        metin = self.cleaned_data["seri_numaralari"]
+
+        seri_numaralari = []
+        gorulenler = set()
+
+        for satir in metin.splitlines():
+            seri_no = satir.strip()
+
+            if not seri_no:
+                continue
+
+            anahtar = seri_no.casefold()
+
+            if anahtar not in gorulenler:
+                gorulenler.add(anahtar)
+                seri_numaralari.append(seri_no)
+
+        if not seri_numaralari:
+            raise forms.ValidationError(
+                "En az bir seri numarası girmelisiniz."
+            )
+
+        return seri_numaralari
+
+
 class DemoCihazForm(forms.ModelForm):
     class Meta:
         model = DemoCihaz
-
         fields = [
             "urun_adi",
             "seri_no",
         ]
-
         widgets = {
             "urun_adi": forms.TextInput(),
             "seri_no": forms.TextInput(),
@@ -218,7 +268,6 @@ class DemoCihazForm(forms.ModelForm):
 class SteriSenseForm(forms.ModelForm):
     class Meta:
         model = SteriSenseKaydi
-
         fields = [
             "bayi",
             "firma",
@@ -227,37 +276,24 @@ class SteriSenseForm(forms.ModelForm):
             "tarih",
             "notlar",
         ]
-
         widgets = {
             "bayi": forms.TextInput(
-                attrs={
-                    "placeholder": "Bayi",
-                }
+                attrs={"placeholder": "Bayi"}
             ),
             "firma": forms.TextInput(
-                attrs={
-                    "placeholder": "Firma",
-                }
+                attrs={"placeholder": "Firma"}
             ),
             "urun_adi": forms.TextInput(
-                attrs={
-                    "placeholder": "Ürün Adı",
-                }
+                attrs={"placeholder": "Ürün Adı"}
             ),
             "seri_no": forms.TextInput(
-                attrs={
-                    "placeholder": "Seri No",
-                }
+                attrs={"placeholder": "Seri No"}
             ),
             "tarih": forms.DateInput(
-                attrs={
-                    "type": "date",
-                }
+                attrs={"type": "date"}
             ),
             "notlar": forms.Textarea(
-                attrs={
-                    "rows": 4,
-                }
+                attrs={"rows": 4}
             ),
         }
 
