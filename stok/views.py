@@ -592,11 +592,24 @@ def firma_gonderi_ekle(request):
                     atlanan += 1
                     continue
 
+                # Önce ürün adı + seri numarası birebir eşleşmesini ara.
                 stok_urunu = Urun.objects.filter(
                     urun_adi__iexact=urun_adi,
                     seri_no__iexact=seri_no,
                     adet__gt=0,
                 ).first()
+
+                # Birebir seri numarası bulunamazsa,
+                # aynı ürün adına ait toplu stok kaydını kullan.
+                if not stok_urunu:
+                    stok_urunu = (
+                        Urun.objects.filter(
+                            urun_adi__iexact=urun_adi,
+                            adet__gt=0,
+                        )
+                        .order_by("-adet", "id")
+                        .first()
+                    )
 
                 FirmaGonderi.objects.create(
                     firma_adi=firma_adi,
@@ -617,7 +630,9 @@ def firma_gonderi_ekle(request):
                         islem_turu="firma_gonderisi",
                         miktar=-1,
                         aciklama=(
-                            f"Firma: {firma_adi}. {notlar}"
+                            f"Firma: {firma_adi}. "
+                            f"Seri No: {seri_no}. "
+                            f"{notlar}"
                         ).strip(),
                     )
 
@@ -629,7 +644,7 @@ def firma_gonderi_ekle(request):
             request,
             (
                 f"{eklenen} gönderi kaydedildi. "
-                f"{stoktan_dusulen} cihaz stoktan düşüldü."
+                f"{stoktan_dusulen} ürün stoktan düşüldü."
             ),
         )
 
